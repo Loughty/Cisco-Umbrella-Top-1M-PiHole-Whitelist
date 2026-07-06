@@ -1,54 +1,35 @@
-name: Update Cisco Umbrella Top-1M -> PiHole format
+name: Update Cisco Umbrella Top-1M -> PiHole whitelist
 
 on:
   schedule:
-    - cron: '0 3 * * *'   # daily at 03:00 UTC (adjust as needed)
+    - cron: '0 3 * * *'   # daily at 03:00 UTC
   workflow_dispatch:
 
 jobs:
   update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up bash script
-        run: |
-          mkdir -p scripts
-          cat > scripts/update-top1m.sh <<'EOF'
-          #!/usr/bin/env bash
-          set -euo pipefail
-          URL="http://s3-us-west-1.amazonaws.com/umbrella-static/top-1m.csv.zip"
-          TMPDIR="$(mktemp -d)"
-          ZIP="$TMPDIR/top-1m.csv.zip"
-          OUT_DIR="output"
-          DOMAINS_FILE="$OUT_DIR/domains.txt"
-          HOSTS_FILE="$OUT_DIR/pihole-hosts.txt"
-          mkdir -p "$OUT_DIR"
-          cleanup() { rm -rf "$TMPDIR"; }
-          trap cleanup EXIT
-          curl -fsSL "$URL" -o "$ZIP"
-          unzip -p "$ZIP" | awk -F',' '{print $2}' | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | grep -E '^[A-Za-z0-9.-]+$' | grep -E -v '^\.' | grep -E -v '\.$' | sort -u > "$DOMAINS_FILE"
-          awk '{print "0.0.0.0 " $0}' "$DOMAINS_FILE" > "$HOSTS_FILE"
-          echo "Wrote $(wc -l < "$DOMAINS_FILE") domains to $DOMAINS_FILE"
-          EOF
-          chmod +x scripts/update-top1m.sh
-
       - name: Run update script
-        run: scripts/update-top1m.sh
+        run: |
+          chmod +x scripts/update-top1m.sh
+          ./scripts/update-top1m.sh
 
-      - name: Commit and push changes
+      - name: Commit and push domains.txt if changed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add output/domains.txt output/pihole-hosts.txt || echo "No changes to add"
+          git add domains.txt || true
           if ! git diff --staged --quiet; then
-            git commit -m "Update Cisco Umbrella top-1m (automated)"
+            git commit -m "Update Cisco Umbrella top-1m whitelist (automated)"
             git push
           else
             echo "No changes to commit"
-          fi
