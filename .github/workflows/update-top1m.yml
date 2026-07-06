@@ -18,18 +18,20 @@ jobs:
 
       - name: Run update script
         run: |
-          chmod +x scripts/update-top1m.sh
+          chmod +x ./scripts/update-top1m.sh
           ./scripts/update-top1m.sh
 
       - name: Commit and push domains.txt if changed
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Aseguramos añadir el archivo esté donde esté (asumiendo raíz)
           git add domains.txt || true
+          
           if ! git diff --staged --quiet; then
             git commit -m "Update Cisco Umbrella top-1m whitelist (automated)"
             git push
           else
             echo "No changes to commit"
+          fi
