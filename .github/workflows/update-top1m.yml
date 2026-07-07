@@ -21,16 +21,16 @@ jobs:
           chmod +x ./scripts/update-top1m.sh
           ./scripts/update-top1m.sh
 
-      - name: Commit and push domains.txt if changed
+      - name: Commit and push domains if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Aseguramos añadir el archivo esté donde esté (asumiendo raíz)
-          git add domains.txt || true
+          # Añadimos todos los archivos .txt que se hayan generado en la raíz
+          git add umbrella-top-1m.txt umbrella-top-500k.txt umbrella-top-100k.txt || true
           
           if ! git diff --staged --quiet; then
-            git commit -m "Update Cisco Umbrella top-1m whitelist (automated)"
+            git commit -m "Update Cisco Umbrella whitelists (1M, 500k, 100k) [automated]"
             git push
           else
             echo "No changes to commit"
