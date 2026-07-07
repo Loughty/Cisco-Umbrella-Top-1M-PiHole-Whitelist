@@ -29,6 +29,7 @@ unzip -p "$ZIP" 2>/dev/null | \
   grep -E -v '^\.' | grep -E -v '\.$' | \
   # remove consecutive dots
   grep -E -v '\.\.' | \
-  sort -u > "$OUT_FILE"
+  # ELIMINA DUPLICADOS MANTENIENDO EL ORDEN ORIGINAL
+  awk '!seen[$0]++' > "$OUT_FILE"
 
 echo "Wrote $(wc -l < \"$OUT_FILE\") unique domains to $OUT_FILE"
